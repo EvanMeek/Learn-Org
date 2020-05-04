@@ -1,0 +1,219 @@
+* org-mode简明教程笔记
+  本笔记为org-mode简明教程的笔记
+  原文地址为: [[https://orgmode.org/guide/][org-mode Compact guide]]
+** 基础介绍
+*** org能做的事
+**** 记笔记
+**** 维护TODO列表
+**** 做任务计划
+**** 创作及发布
+**** 文学编程
+*** 安装好org后的可选基础配置 
+    #+begin_src emacs-lisp
+      (global-set-key (kbd "C-c l") 'org-store-link)
+      (global-set-key (kbd "C-c a") 'org-agenda)
+      (global-set-key (kbd "C-c c") 'org-capture)
+    #+end_src
+    在打开后缀为.org文件后会自动进入org-mode
+** 文档结构
+   Org是基于大纲的一种工具，大纲模式的好处是可以很好的记录笔记和临时的想法，还可以通过折叠来隐藏不需要查看的内容。
+   #+begin_src emacs-lisp
+     ;; 可以通过此命令或快捷键TAB进行显示和隐藏内容
+     (org-cycle)
+   #+end_src
+*** 标题
+    Org用*号表示标题的层级关系，就像这样:
+    #+begin_src org
+      ,* 标题一
+        一些文字
+      ,** 子标题1
+         子标题1的内容
+      ,** 子标题2
+         子标题2的内容
+      ,* 标题二
+        标题二的内容
+      ,** 子标题1
+         子标题1的内容
+    #+end_src
+**** 其他
+***** 标题的标题是啥？
+      标题的标题叫脚注，后面会讲，其中一个功能就是会在被导出时忽略掉
+***** 不想看那么多星星咋办？
+      后面也会讲到，不过这里可以提前说一下:
+      #+begin_src org
+        ,#+STARTUP: hidestars odd
+        ,* 标题一
+          一些文字
+        ,** 子标题1
+           子标题1的内容
+        ,** 子标题2
+           子标题2的内容
+        ,* 标题二
+          标题二的内容
+        ,** 子标题1
+           子标题1的内容
+
+      #+end_src
+*** 不同的显示样式
+    Org-mode有三种大纲显示模式，而又分为两种不同的状态:
+**** 子项 Subtree
+     - FOLDED 折叠
+     - CHILDREN 不知道咋翻译
+     - SUBTREE 不知道咋翻译
+       将光标放置与某个子项上键入_TAB_即可切换三种不同的显示模式，如果键入了_C-u TAB_或者是_S-TAB_（这里的S-，是Shift）将会调用全局的显示状态。
+**** 全局 Global
+     - OVERVIEW 概览
+     - CONTENTS 目次
+     - SHOW ALL 全部显示
+       可以在键入_S-TAB_或_C-u TAB_在这三个显示模式下切换，如果键入_C-u C-u C-u TAB_就会直接切换为SHOW ALL显示模式
+**** 其他
+     Org打开一个文件时默认为*概览*模式，想要设置打开一个文件后的显示模式可以设置变量~org-startuop-folded~：
+     #+begin_src emacs-lisp
+       ;; 非空意味着概览OVERVIEW，nil意味着全部显示SHOW ALL
+       (setq org-startup-folded t)
+     #+end_src
+     如果要针对单独的org文件配置，可以在org文件开头设置:
+     #+begin_src org
+       ,#+STARTUP: overview
+     #+end_src
+     可选参数有:
+     - content
+     - overview
+     - showall
+*** 移动相关
+    以下是关于在标题间跳转的命令
+    _C-c C-n_	下一个标题
+    _C-c C-p_	上一个标题
+    _C-c C-f_	下一个同级标题
+    _C-c C-b_	上一个同级标题
+    _C-c C-u_	跳转到父级目录
+*** 结构编辑 
+    _M-RET_	创建同级别的新标题（如果在一个列表项中，则会创建新的列表项/如果在某一行中间键入，将会将其分割并创建新的标题）。
+    _M-S-RET_	创建同级别的TODO条目
+    _TAB_	循环改变未指定标题名的标题的标题等级
+    _M_LEFT/RIGHT_	将当前标题提升或降级
+    _M_UP/DOWN_	上下交换同级别
+    _C-c C-w_	将当前条目放置与指定条目下
+    _C-x n s/w_	以当前子项为单位进行变窄和变宽
+**** 其他
+     如果在创建统计目录的新标题时不想分割标题可以定制变量~org-M-RET-may-split-line~，例子（具体请查看文档）:
+     #+begin_src emacs-lisp
+       ;; 默认不分割
+       (setq org-M-RET-may-split-line '((headline . nil)))
+     #+end_src
+*** Sparse Trees 不知道咋翻译，称为稀疏树
+    org有关很重要的功能，根据选定的信息构建Sparse Trees
+    _C-c /_	这会提示你要使用哪些Sparse Trees的命令
+    _C-c / r_	使用正则匹配，所有可匹配的Sparse Trees，匹配到的会高亮，键入_C-c C-c_取消高亮。
+*** 清单列表
+    我们不仅可以创建标题样的条目，还能创建例如：复选框，有序无序列表。
+    * 有序无须列表的创建方式：
+      - 无序列表用“-”，“+”或“*”
+      - 有序列表用“1. sometext”或“1) sometext”
+      - 可以指定列表的说明，用“::”与条目标题与说明隔开
+        
+    同一个列表的项目的第一行必须是相同的缩进，下面是一些例子: 
+    * 西游记观后感
+      我最喜欢的场景有（顺序）
+      1. 三打白骨精
+      2. 女儿国
+         + 要我是唐僧可能就留下来了
+         + 可惜我不是，哈哈哈
+      我最喜欢的角色有
+      - 如来佛祖 :: 跟我爸的体型有得一拼
+      - 孙悟空 :: 好一个齐天大圣！
+
+
+    * 下面是一些按键的介绍:-
+      - _TAB_ :: 类似于标题的折叠
+      - _M-RET_ :: 新建同级项，如果要改变条目类型，可以使用前缀参数
+      - _M-S_RET_ :: 新建带有复选框的同级项
+      - _M-S-UP/DOWN_ :: 上下移动当前项，如果是有序的还会自动编号。
+      - _M-LEFT/RIGHT_ :: 将当前项降级或者升级
+      - _C-c C-c_ :: 勾选复选框
+      - _C-c -_ :: 循环修改当前项的条目符号('-','+','*','1.','1\)')。
+** 表格
+   Org带有一个快速直观的表格编辑器，如果与Emacs的*calc*包一起使用可以实现类似电子表格的计算。
+   
+   * 想要创建一个表格分为以下几步
+     1. 先创建列名
+        #+begin_src org
+          | name     | age | tel |
+
+
+
+
+        #+end_src
+     2. 创建分割线
+        #+begin_src org
+          | name | tel | age |
+          |------+-----+-----|
+
+          | name | tel | age|
+          | - 
+            |
+            - - > TAB
+        #+end_src
+     3. 按TAB或RET新建行
+*** 按键说明
+    - _C-c C-c_ :: 重新对齐表格
+    - _TAB_ :: 重新对齐表格/移动到下一个单元格/创建新行
+    - _S-TAB_ :: 重新对齐表格/移动到上一个单元格
+    - _RET_ :: 重新对齐表格，并移动到下一行/创建新行
+    - _S-UP/DOWN/LEFT/RIGHT_ :: 交换单元格为上下左右的单元格
+    - _M-LEFT/RIGHT :: 交换列为左边或右边的列
+    - _M-S-LEFT_ :: 删除当前列
+    - _M-S-RIGHT_ :: 向右插入新列
+    - _M-UP/DOWN_ :: 上下移动当前行
+    - _M-S-UP_ :: 删除当前行
+    - _M-S-DOWN_ :: 在当前行上方插入新行，如果指定前缀参数会下下方插入新行
+    - _C-c -_ :: 在当前行上插入分割线
+    - _C-c RET_ :: 在当前行下插入分割线，并移动到水平线下一行
+    - _C-c ^_ :: 根据当前列对表格进行排序
+** 超链接
+   * 超链接有两种定义方式
+     - 带说明的超链接
+       #+begin_src org
+         [[https://www.baidu.com][百度一下，你就知道]]
+       #+end_src
+     - 不带说明的超链接
+       #+begin_src org
+         [[www.baidu.com]]
+       #+end_src
+   * 超链接的链接方式
+     - 内部链接
+       也就是指链接与当前文件的一些链接，例如链接到当前文件某处
+       #+begin_src org
+         [[My Target1]]
+         [[My Target2][目标2]]
+
+
+
+         <<My Target1>>
+         <<My Target2>>
+       #+end_src
+     - 外部链接
+       org的超链接支持指向文件，网站，电子邮件等等
+       #+begin_src org
+         [[https://www.baidu.com][百度一下，你就知道]]
+         [[file:~/.emacs.d/init.el][Emacs Config - init.el]]
+         [[mailto:the_lty_mail@foxmail.com][EvanMeek's 邮箱]]
+         [[irc:/irc.com/#emacs/evanmeek][IRC Emacs]]
+         [[info:org#Hyperlinks][Emacs Org超链接内部文档]]
+       #+end_src
+       + 其他
+         在指定文件为指向的链接时，可以指定特定行或目标:
+         - 特定行
+           #+begin_src org
+             [[file:~/.emacs.d/init.el::15][Emacs Config - init.el 15L]]
+           #+end_src
+         - 特定目标
+           #+begin_src org
+             [[file:~/.emacs.d/test.org::Test Target][test.org Test Target]]
+           #+end_src
+   * 处理超链接
+     我们可以使用命令~org-store-link~存储当前的位置，然后再通过一些处理超链接的方式处理当前位置的链接，你可以将其绑定一个快捷键，[[*安装好org后的可选基础配置][见: 安装好org后的可选基础配置]]
+     
+   _C-c C-l_	插入链接
+   _C-c C-l_	当光标置于一个超链接上，可以直接编辑它
+   _C-c C-o_	打开当前光标下的超链接
