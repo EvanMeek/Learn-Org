@@ -1,3 +1,4 @@
+#+STARTUP: content
 * org-mode简明教程笔记
   本笔记为org-mode简明教程的笔记
   原文地址为: [[https://orgmode.org/guide/][org-mode Compact guide]]
@@ -103,7 +104,8 @@
      #+end_src
 *** Sparse Trees 不知道咋翻译，称为稀疏树
     org有关很重要的功能，根据选定的信息构建Sparse Trees
-    _C-c /_	这会提示你要使用哪些Sparse Trees的命令
+    _
+    C-c /_	这会提示你要使用哪些Sparse Trees的命令
     _C-c / r_	使用正则匹配，所有可匹配的Sparse Trees，匹配到的会高亮，键入_C-c C-c_取消高亮。
 *** 清单列表
     我们不仅可以创建标题样的条目，还能创建例如：复选框，有序无序列表。
@@ -217,3 +219,161 @@
    _C-c C-l_	插入链接
    _C-c C-l_	当光标置于一个超链接上，可以直接编辑它
    _C-c C-o_	打开当前光标下的超链接
+** 代办事项
+*** 代办事项基础
+**** 基础的代办事项功能
+     当标题的开头为"TODO"时，任何标题都会成为一个代办事项，例如:
+     #+begin_src org
+       ,* TODO 完成ORG-MODE笔记xxx部分
+     #+end_src
+     可以通过按键_C-c C-t_来对一个已存在标题标记不同的代办状态，默认情况下有三种代办状态:
+     - TODO :: 代办事项
+     - DONE :: 已完成的代办事项
+     - unmarked :: 未标记为代办事项的标题，也就是普通的标题
+
+     还可以通过agenda缓冲区的~t~命令按键来远程完成切换不同代办状态。
+     
+     下面是一些按键说明:
+
+     - _S-RIGHT/LEFT_ :: 选择前或后一种代办状态，类似于循环切换代办状态.
+     - _C-c / t_ :: 用[[*Sparse Trees 不知道咋翻译，称为稀疏树][Sparse Trees]]浏览代办事项。这将会折叠整个buffer，但是会显示所有的代办状态（除了DONE状态），以及标题的层级关系。
+     - ~M-x org-agenda t~ :: 显示全局的代办事项，代办事项列表从所有的agenda文件中收集，然后在一个单独的缓冲区内显示。
+     - _S-M-RET_ :: 新建一个代办事项
+***** 其他
+      也可以通过改变标签从而修改代办事项状态，具体见函数[[help:org-todo-trigger-tag-changes][org-todo-tigger-tag-changes]]的文档。
+**** 多种工作流状态
+     你可以为使用"TODO"关键字表明@emph[顺序]工作流状态:
+     #+begin_src emacs-lisp
+       (setq org-todo-keywords
+             '((sequence "TODO" "FEEDBACK" "VERIFY" "|" "DONE" "DELEGATED")))
+     #+end_src
+     竖线之前的状态代表需要完成的事，而之后代表已完成的事。如果你没有提供竖线作为分割，那么就会把最后一个状态作为"DONE"的状态。安装好后，你就可以使用_C-c C-t_来循环切换这几个状态了。
+     有时你可能想要使用不同的方式设置"TODO"关键字，例如，你可能想要最基本的”TODO=/=DONE"，但同时也想要有修复bug的工作流，
+     你可以安装以下的代码:
+     #+begin_src emacs-lisp
+       (setq org-todo-keywords
+             '((sequence "TODO(t)" "WAIT(w)" "|" "DONE(d)" "CANCEL(c)")
+               (sequence "REPORT(r)" "BUG(b)" "KNOWNCAUSE(k)" "|" "FIXED(f)")))
+     #+end_src
+     以上代码让你在为一个标题提供代办事项状态时添加了一个键序列，你可以键入_C-c C-t_来查看效果。
+
+     如果你想为单独的Org文件提供一个代办状态，并且为其添加键序列，可以使用如下配置:
+     #+begin_src org
+       ,#+TODO: TODO(t) | DONE(d)
+       ,#+TODO: REPORT(r) BUG(b) KNOWNCAUSE(k) | FIXED(f)
+       ,#+TODO: | CANCELED(c)
+     #+end_src
+**** 进展日志
+     记录进展日志以及改变代办状态的时间戳可以使用前缀调用命令_org-todo_。
+     
+     当你键入_C-u C-c C-t_将会提示你改变当前标题的代办状态，如果你将一个代办状态从TODO状态改为DONE状态的话，那么org就会为你创建一个时间戳，以记录你完成当前代办事项的时间。这个功能是基于一个特定的变量决定的：
+     #+begin_src emacs-lisp
+       (setq org-log-done 'note)
+     #+end_src
+     这边出了点小意外，就是我设定~org-log-done~的值，没有效果，可能是版本原因，这边简单讲下不同设定下的不同区别  。
+     实现的效果大概是这样的:
+     #+begin_src org
+       ,* 每日任务
+       ,** DONE 读书
+         - State "DONE"       from "TODO"       [2020-05-05 二 19:57] \\
+           读完了
+         - State "TODO"       from              [2020-05-05 二 19:09] \\
+           要开始读书了
+           今天读《西游记》
+       ,** FIXED 编程
+           - State "FIXED"      from "BUG"        [2020-05-05 二 19:58] \\
+             解决了BUG
+           - State "BUG"        from "TODO"       [2020-05-05 二 19:57] \\
+             有个BUG
+           - State "TODO"       from "WAIT"       [2020-05-05 二 19:57] \\
+             开始编程
+           - State "WAIT"       from              [2020-05-05 二 19:55] \\
+             等读完书再来写代码
+       ,**  CANCEL 打游戏
+             - State "CANCEL"     from "WAIT"       [2020-05-05 二 19:58] \\
+               由于写代码时解决bug时间花太长了，没时间打游戏了，取消掉
+             - State "WAIT"       from              [2020-05-05 二 19:56] \\
+               12点之前还有时间的话就打游戏
+     #+end_src
+     下面我还可以对TODO关键字进行单独的设置，让其具有进展日志的功能，比如下面我们为TODO和WAIT关键字指定了默认具有记录时间戳的功能，让DONE或CANCEL关键字具有记录日志的功能：
+     #+begin_src emacs-lisp
+       (setq org-todo-keywords
+                    '((sequence "TODO(t!)" "WAIT(w!)"  "|" "DONE(d@)" "CANCEL(c@)")))
+     #+end_src
+     其中*@*代表记录日志，而*!*代表记录时间戳，你也可以让他们具有两种功能: ~TODO(t@/!)~
+     
+     同样，我们也可以单独为某个org文件设置:
+     #+begin_src org
+       ,#+TODO: TODO(t) | WAIT(w@/!) | DONE (d!) CANCEL(c@)
+     #+end_src
+**** 优先级
+     当你大量使用Org模式后，你可能会有大量的代办事项条目，这个时候你可以为其设置优先级标记:
+     #+begin_src org
+       ,*** TODO [#A] 洗碗
+     #+end_src
+     有三种优先级模式，A-C，若不指定优先级，'B'等级是默认的。
+
+     - _C-c ,_ :: 设置当前标题的优先级，键入A-C设置级别，或者键入_SPC_清除标记
+     - _S-UP/DOWN_ :: 提升/降低当前标题的优先级
+**** 任务细分
+     我们可以将一个代办事项分为多个小的代办事项，并且可以用一些标记用于对小的代办事项做统计：
+     #+begin_src org
+       ,* TODO 每日任务 [33%]
+       ,** TODO 写作业 [2/3]
+       ,*** TODO 语文
+       ,*** DONE 数学
+           CLOSED: [2020-05-06 三 05:53]
+           - State "DONE"       from "TODO"       [2020-05-06 三 05:53]
+       ,*** DONE 英语
+           CLOSED: [2020-05-06 三 07:53]
+           - CLOSING NOTE [2020-05-06 三 07:53] \\
+             为了 提高我的英语水平，我活出uqle
+       ,** TODO 健身 [50%]
+       ,*** TODO 1组仰卧起坐
+       ,*** DONE 1组上下蹲
+           CLOSED: [2020-05-06 三 07:52]
+           - CLOSING NOTE [2020-05-06 三 07:52] \\
+             累死我了
+       ,*** TODO 500次跳绳
+       ,*** DONE 5km慢跑
+           CLOSED: [2020-05-06 三 05:55]
+           - State "DONE"       from "TODO"       [2020-05-06 三 05:55]
+       ,** DONE 学做菜 [2/2]
+          CLOSED: [2020-05-06 三 05:56]
+          - State "DONE"       from "TODO"       [2020-05-06 三 05:56]
+       ,*** DONE 主菜
+           CLOSED: [2020-05-06 三 05:56]
+           - State "DONE"       from "TODO"       [2020-05-06 三 05:56]
+           - 东坡肉
+       ,*** DONE 副菜
+           CLOSED: [2020-05-06 三 05:56]
+           - State "DONE"       from "TODO"       [2020-05-06 三 05:56]
+           - 上海青
+           - 鱼汤
+     #+end_src
+     代办事项的进度有两种呈现方式，一种是标记为~[/]~另一种是标记为~[%]~，如果它们的子项已完成，那么当前代办事项会自动切换状态为DONE。
+     _C-c C-c_ 刷新进度的状态
+**** 复选框
+     还记得清单列表么，其中有一个复选框的样式，复选框不会被包含在全局的代办事项列表中，因此很适合用来将一个代办事项划分为多个步骤的操作：
+     #+begin_src org
+       ,* TODO 每日任务 [33%]
+       ,** TODO 写作业 [3/3]
+          - [X] 语文
+          - [X] 数学
+          - [X] 英语
+       ,** TODO 健身 [100%]
+          - [X] 1组仰卧起坐
+          - [X] 1组上下蹲
+          - [X] 500
+          - [X] 5km慢跑
+       ,** TODO 学做菜 [2/2]
+       ,*** DONE 主菜 [100%]
+           CLOSED: [2020-05-06 三 06:08]
+           - State "DONE"       from "TODO"       [2020-05-06 三 06:08]
+           - [X] 东坡肉
+       ,*** DONE 副菜 [2/2]
+           CLOSED: [2020-05-06 三 06:08]
+           - State "DONE"       from "TODO"       [2020-05-06 三 06:08]
+           - [X] 上海青
+           - [X] 鱼汤
+     #+end_src
